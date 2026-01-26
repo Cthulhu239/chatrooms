@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+            <p style="color: red;">{{ message }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}  
+    <form method = "POST">
+    {% csrf_token %}
+    <h3>Create a room?</h3>
+    <input type = "text" id = "room" name = "room" placeholder = "room name">
+    <button type = "submit">Save</button>
+    </form>
+    <hr>
+    {% if rooms %}
+       {% for room in rooms %}
+            <a href="{% url 'room' room.room_name %}">{{ room.room_name }}</a>
+        {% endfor %}
+    {% endif %}
+    
+    
+</body>
+</html>

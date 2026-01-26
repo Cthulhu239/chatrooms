@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    {% for msg in messages %}
+    <p>
+        <strong>{{ msg.author }}:</strong> {{ msg.message }} 
+        <small>({{ msg.timestamp|date:"H:i" }})</small>
+    </p>
+    {% endfor %}
+    <form method = "POST">
+    {% csrf_token %}
+    <input type = "text" name = "write" placeholder = "type something">
+    <button type = "submit">send</button>
+    </form>
+</body>
+</html>
