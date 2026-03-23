@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect
+from django.shortcuts import render,redirect,get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate,login as auth_login,logout
@@ -63,12 +63,13 @@ def home(request):
 def chat(request,room):
     if request.method == 'POST':
         message_sent = request.POST.get('write')
-        room_detail = Room.objects.get(room_name = room)
+        room_detail = get_object_or_404(Room, room_name=room)
         Message.objects.create(message = message_sent,author = request.user,room = room_detail)
-    room_detail = Room.objects.get(room_name = room)
+    room_detail = get_object_or_404(Room, room_name=room)
     message_detail = Message.objects.filter(room = room_detail).order_by('timestamp')
     context = {
-              'messages':message_detail
+              'messages':message_detail,
+              'room_name':room,
               }
     return render(request,'chat.html',context)
 

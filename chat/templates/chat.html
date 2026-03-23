@@ -3,19 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Chat Room — {{ room_name }}</title>
 </head>
 <body>
-    {% for msg in messages %}
-    <p>
-        <strong>{{ msg.author }}:</strong> {{ msg.message }} 
-        <small>({{ msg.timestamp|date:"H:i" }})</small>
-    </p>
-    {% endfor %}
-    <form method = "POST">
-    {% csrf_token %}
-    <input type = "text" name = "write" placeholder = "type something">
-    <button type = "submit">send</button>
+
+    <h3>Room: {{ room_name }}</h3>
+
+    <div id="messages">
+        {% for msg in messages %}
+        <p>
+            <strong>{{ msg.author }}:</strong> {{ msg.message }}
+            <small>({{ msg.timestamp|date:"H:i" }})</small>
+        </p>
+        {% endfor %}
+    </div>
+
+    <form id="message-form">
+        <input type="text" name="write" id="msg" placeholder="Type something..." autocomplete="off">
+        <button type="submit" id="submit">Send</button>
     </form>
+
 </body>
+<script>
+    // get the current logged in user from Django template
+    const currentUser = "{{ request.user.username }}";
+
+    // use wss on https, ws on http
+    const websocketProtocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const wsEndpoint = `${websocketProtocol}://${window.location.host}/ws/chat/{{ room_name }}/`;
+
+    const socket = new WebSocket(wsEndpoint);
+
+    socket.onopen = (event) => {
+        console.log("Connected!");
+    };
+
+    socket.onclose = (event) => {
+        console.log("Disconnected!");
+        // notify user in the chat box itself
+        document.getElementById('messages').insertAdjacentHTML('beforeend',
+            `<p><em>You have been disconnected.</em></p>`
+        );
+    };
+
+    socket.onerror = (error) => {
+        console.log("WebSocket error:", error);
+    };
+
+    // receive message from server → show it
+   socket.onmessage = (e) => {
+    let data = JSON.parse(e.data);
+
+    if (data.type === 'chat') {
+        let messages = document.getElementById('messages');
+        messages.insertAdjacentHTML('beforeend',
+            `<p>
+                <strong>${data.author}:</strong> ${data.message}
+                <small>(${data.timestamp})</small>
+            </p>`
+        );
+        messages.scrollTop = messages.scrollHeight;
+    }
+
+    // ✅ show errors in chat box so you can see what broke
+    if (data.type === 'error') {
+        document.getElementById('messages').insertAdjacentHTML('beforeend',
+            `<p style="color:red">${data.message}</p>`
+        );
+    }
+};
+
+    let form = document.getElementById('message-form');
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+
+        let message = document.getElementById('msg').value.trim();
+
+        // don't send empty messages
+        if (!message) return;
+
+        // check connection is open before sending
+        if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({
+                'message': message,
+                'author': currentUser    // ✅ was missing — consumer needs this
+            }));
+        } else {
+            console.log("Socket not open, can't send");
+        }
+
+        form.reset();
+    });
+
+    // scroll to bottom on page load (existing messages)
+    window.onload = function () {
+        const messages = document.getElementById('messages');
+        messages.scrollTop = messages.scrollHeight;
+    };
+</script>
 </html>
